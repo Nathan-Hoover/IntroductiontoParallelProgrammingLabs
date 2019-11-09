@@ -4,8 +4,16 @@
 #include <time.h>
 #include <sys/time.h>
 
+/*
+ * This Project References an article on "OpenMP: Monte Carlo method for Pi"
+ * Found at: http://jakascorner.com/blog/2016/05/omp-monte-carlo-pi.html
+ * It was adapted to use the variables and methods supplied in the first
+ * OC Intro to Parallel programming lab and have clear variables to demonstrate
+ * the parallel values provided by OpenMP
+ */
+
 // Returns a random value between -1 and 1
-double getRand(unsigned int* seed)
+double getRand(unsigned int *seed)
 {
 	return (double)rand_r(seed) * 2 / (double)(RAND_MAX)-1;
 }
