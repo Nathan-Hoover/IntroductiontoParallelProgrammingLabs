@@ -7,52 +7,84 @@
 static const long Num_To_Add = 1000000000;
 static const double Scale = 10.0 / RAND_MAX;
 
-long add_serial(const char *numbers) {
-    long sum = 0;
-    for (long i = 0; i < Num_To_Add; i++) {
-        sum += numbers[i];
-    }
-    return sum;
+long add_serial(const char* numbers) {
+	long sum = 0;
+	for (long i = 0; i < Num_To_Add; i++) {
+		sum += numbers[i];
+	}
+	return sum;
 }
 
-long add_parallel(const char *numbers) {
-    long sum = 0;
+long add_parallel(const char* numbers)
+{
+	long totalSum = 0;
 
-    return sum;
+	int numberOfThreads = omp_get_max_threads();
+	int workloadPerThread = Num_To_Add / numberOfThreads;
+	int extraWorkloadForLastThread = Num_To_Add % numberOfThreads;
+
+	//Splits the workload by the number of threads
+#pragma omp parallel for num_threads(numberOfThreads)
+	for (int i = 0; i < numberOfThreads; i++)
+	{
+		int sumOfThread = 0;
+		int startingLocationForThread = i * workloadPerThread;
+
+		for (long i = 0; i < workloadPerThread; i++)
+		{
+			sumOfThread += numbers[i + startingLocationForThread];
+		}
+
+		// Case for uneven division of workload
+		// Extra workload will be performed by last thread
+		if (extraWorkloadForLastThread > 0 && i == numberOfThreads - 1)
+		{
+			int startingLocationForExtraWorkload = startingLocationForThread + workloadPerThread;
+			for (long i = 0; i < extraWorkloadForLastThread; i++)
+			{
+				sumOfThread += numbers[i + startingLocationForExtraWorkload];
+			}
+		}
+
+		// Sum the values calculated by each thread
+		totalSum += sumOfThread;
+	}
+
+	return totalSum;
 }
 
 int main() {
-    char *numbers = malloc(sizeof(long) * Num_To_Add);
+	char* numbers = malloc(sizeof(long) * Num_To_Add);
 
-    long chunk_size = Num_To_Add / omp_get_max_threads();
+	long chunk_size = Num_To_Add / omp_get_max_threads();
 #pragma omp parallel num_threads(omp_get_max_threads())
-    {
-        int p = omp_get_thread_num();
-        unsigned int seed = (unsigned int) time(NULL) + (unsigned int) p;
-        long chunk_start = p * chunk_size;
-        long chunk_end = chunk_start + chunk_size;
-        for (long i = chunk_start; i < chunk_end; i++) {
-            numbers[i] = (char) (rand_r(&seed) * Scale);
-        }
-    }
+	{
+		int p = omp_get_thread_num();
+		unsigned int seed = (unsigned int)time(NULL) + (unsigned int)p;
+		long chunk_start = p * chunk_size;
+		long chunk_end = chunk_start + chunk_size;
+		for (long i = chunk_start; i < chunk_end; i++) {
+			numbers[i] = (char)(rand_r(&seed) * Scale);
+		}
+	}
 
-    struct timeval start, end;
+	struct timeval start, end;
 
-    printf("Timing sequential...\n");
-    gettimeofday(&start, NULL);
-    long sum_s = add_serial(numbers);
-    gettimeofday(&end, NULL);
-    printf("Took %f seconds\n\n", end.tv_sec - start.tv_sec + (double) (end.tv_usec - start.tv_usec) / 1000000);
+	printf("Timing sequential...\n");
+	gettimeofday(&start, NULL);
+	long sum_s = add_serial(numbers);
+	gettimeofday(&end, NULL);
+	printf("Took %f seconds\n\n", end.tv_sec - start.tv_sec + (double)(end.tv_usec - start.tv_usec) / 1000000);
 
-    printf("Timing parallel...\n");
-    gettimeofday(&start, NULL);
-    long sum_p = add_parallel(numbers);
-    gettimeofday(&end, NULL);
-    printf("Took %f seconds\n\n", end.tv_sec - start.tv_sec + (double) (end.tv_usec - start.tv_usec) / 1000000);
+	printf("Timing parallel...\n");
+	gettimeofday(&start, NULL);
+	long sum_p = add_parallel(numbers);
+	gettimeofday(&end, NULL);
+	printf("Took %f seconds\n\n", end.tv_sec - start.tv_sec + (double)(end.tv_usec - start.tv_usec) / 1000000);
 
-    printf("Sum serial: %ld\nSum parallel: %ld", sum_s, sum_p);
+	printf("Sum serial: %ld\nSum parallel: %ld", sum_s, sum_p);
 
-    free(numbers);
-    return 0;
+	free(numbers);
+	return 0;
 }
 
