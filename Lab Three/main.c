@@ -57,40 +57,46 @@ int main(int argc, const char** argv) {
 	};
 
 	// Loop through the image pixels
-#pragma omp parallel for shared(pixels) schedule(dynamic)
-	for (int img_y = 0; img_y < Image_Height; img_y++) {
-		for (int img_x = 0; img_x < Image_Width; img_x++) {
-			// Find the value of C in the Mandelbrot range corresponding to this pixel
-			Complex c = {
-					.real = min_bounds.real + img_x * scale.real,
-					.imaginary = min_bounds.imaginary + img_y * scale.imaginary
-			};
+	// "shared(pixels)" tells OMP to share the variable pixels with all the threads
+	#pragma omp parallel shared(pixels)
+	{
+		// "parallel for" tells OMP to parallelize the following for loop
+		// "schedule(dynamic)" separates the workload into chunks dynamically
+		//      and feeds them to the threads until the work is complete
+		#pragma omp parallel for schedule(dynamic)
+		for (int img_y = 0; img_y < Image_Height; img_y++) {
+			for (int img_x = 0; img_x < Image_Width; img_x++) {
+				// Find the value of C in the Mandelbrot range corresponding to this pixel
+				Complex c = {
+						.real = min_bounds.real + img_x * scale.real,
+						.imaginary = min_bounds.imaginary + img_y * scale.imaginary
+				};
 
-			// Check if the current pixel is in the Mandelbrot set
-			// We use the optimizations from https://randomascii.wordpress.com/2011/08/13/faster-fractals-through-algebra/
-			Complex z = { .real = 0, .imaginary = 0 };
-			Complex z_squared = { .real = 0, .imaginary = 0 };
+				// Check if the current pixel is in the Mandelbrot set
+				// We use the optimizations from https://randomascii.wordpress.com/2011/08/13/faster-fractals-through-algebra/
+				Complex z = { .real = 0, .imaginary = 0 };
+				Complex z_squared = { .real = 0, .imaginary = 0 };
 
-			int iterations = 0;
-			while (z_squared.real + z_squared.imaginary <= 4 && iterations < Max_Iterations) {
-				z.imaginary = z.real * z.imaginary;
-				z.imaginary += z.imaginary;
-				z.imaginary += c.imaginary;
+				int iterations = 0;
+				while (z_squared.real + z_squared.imaginary <= 4 && iterations < Max_Iterations) {
+					z.imaginary = z.real * z.imaginary;
+					z.imaginary += z.imaginary;
+					z.imaginary += c.imaginary;
 
-				z.real = z_squared.real - z_squared.imaginary + c.real;
+					z.real = z_squared.real - z_squared.imaginary + c.real;
 
-				z_squared.real = z.real * z.real;
-				z_squared.imaginary = z.imaginary * z.imaginary;
+					z_squared.real = z.real * z.real;
+					z_squared.imaginary = z.imaginary * z.imaginary;
 
-				iterations++;
+					iterations++;
+				}
+
+				pixels[img_y * Image_Width + img_x][0] = colors[iterations][0];
+				pixels[img_y * Image_Width + img_x][1] = colors[iterations][1];
+				pixels[img_y * Image_Width + img_x][2] = colors[iterations][2];
 			}
-
-			pixels[img_y * Image_Width + img_x][0] = colors[iterations][0];
-			pixels[img_y * Image_Width + img_x][1] = colors[iterations][1];
-			pixels[img_y * Image_Width + img_x][2] = colors[iterations][2];
 		}
 	}
-
 
 	FILE* fp = fopen("MandelbrotSet.ppm", "wb");
 	fprintf(fp, "P6\n %d %d\n %d\n", Image_Width, Image_Height, MAX_RGB_VAL);
