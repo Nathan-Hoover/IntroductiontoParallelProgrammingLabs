@@ -63,7 +63,9 @@ int main(int argc, const char** argv) {
         // "parallel for" tells OMP to parallelize the following for loop
         // "schedule(dynamic)" separates the workload into chunks dynamically
         //      and feeds them to the threads until the work is complete
-#pragma omp for schedule(dynamic)
+        // "collapse" Causes the iterations, of the associated loops, are collapsed into a single
+        //      large iteration space that has its workload divided based on the specified schedule
+#pragma omp for schedule(dynamic) collapse(2)
         for (int img_y = 0; img_y < Image_Height; img_y++) {
             for (int img_x = 0; img_x < Image_Width; img_x++) {
                 // Find the value of C in the Mandelbrot range corresponding to this pixel
