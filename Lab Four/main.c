@@ -64,8 +64,8 @@ void QuickSort(int* arr, int left, int right)
 // Calls sequential version of Quick Sort
 void sort_s(int* arr) {
 
-    int leftStart = 0;
-    int rightStart = Num_To_Sort - 1;
+    const int leftStart = 0;
+    const int rightStart = Num_To_Sort - 1;
 
     QuickSort(arr, leftStart, rightStart);
 }
@@ -142,8 +142,8 @@ void QuickSort_Parallel(int* arr, int left, int right)
 //      and encloses it with OpenMP pragmas
 void sort_p(int* arr)
 {
-    int leftStart = 0;
-    int rightStart = Num_To_Sort - 1;
+    const int leftStart = 0;
+    const int rightStart = Num_To_Sort - 1;
 
     /// Tells OpenMP to attempt to parallelize the enclosed code
     ///  using the specified max number of threads
@@ -162,13 +162,13 @@ void sort_p(int* arr)
 
 int main() {
     int* arr_s = malloc(sizeof(int) * Num_To_Sort);
-    long chunk_size = Num_To_Sort / omp_get_max_threads();
+    const long chunk_size = Num_To_Sort / omp_get_max_threads();
 #pragma omp parallel num_threads(omp_get_max_threads())
     {
         int p = omp_get_thread_num();
         unsigned int seed = (unsigned int)time(NULL) + (unsigned int)p;
-        long chunk_start = p * chunk_size;
-        long chunk_end = chunk_start + chunk_size;
+        const long chunk_start = p * chunk_size;
+        const long chunk_end = chunk_start + chunk_size;
         for (long i = chunk_start; i < chunk_end; i++) {
             arr_s[i] = rand_r(&seed);
         }
