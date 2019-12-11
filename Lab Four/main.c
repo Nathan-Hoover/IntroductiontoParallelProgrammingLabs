@@ -12,7 +12,7 @@
 #include <memory.h>
 
 // Number of values to sort
-static const long Num_To_Sort = 1000000;
+static const long Num_To_Sort = 1000000000;
 
 // The number of sorts left where it becomes
 // faster to have a single thread create tasks
